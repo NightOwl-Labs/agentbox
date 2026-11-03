@@ -6,6 +6,16 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 command -v brew >/dev/null 2>&1 || { echo "Install Homebrew first: https://brew.sh"; exit 1; }
+
+# PowerShell keeps user modules in ~/.local/share. An earlier sudo install can leave
+# ~/.local owned by root, which makes the module install fail partway through.
+if ! mkdir -p "$HOME/.local/share" 2>/dev/null || [[ ! -w "$HOME/.local/share" ]]; then
+  echo "Can't write to ~/.local/share. It's owned by: $(stat -f %Su "$HOME/.local")" >&2
+  echo "Fix it, then re-run this script:" >&2
+  echo "  sudo chown -R \"\$(id -un)\":staff ~/.local" >&2
+  exit 1
+fi
+
 brew bundle --file=Brewfile
 
 pwsh -NoLogo -NoProfile -Command '

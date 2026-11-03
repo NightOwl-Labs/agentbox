@@ -92,6 +92,52 @@ Notes:
 2. Create the machine user with a role address such as `orchestrator@nightowl-labs.dev`, turn on two factor, store its password and 2FA recovery codes in your personal Bitwarden vault.
 3. Store each token in its Bitwarden project (`coding` gets the worker token, `orchestrator` gets the orchestrator token). Set token expirations and rotate quarterly.
 
+### 1.7 Log in to GitHub and add agent accounts (MANUAL, on your MacBook)
+
+Do this after the shared mailboxes exist (`identity/02-create-mailboxes.ps1`). Keep `gh` on the MacBook logged in as the org owner, never as a machine user.
+
+**Log in `gh` as an org owner**
+
+`env -u GITHUB_TOKEN` stops a stale `GITHUB_TOKEN` in your shell from overriding the login.
+
+```bash
+env -u GITHUB_TOKEN gh auth login -h github.com -s admin:org --web
+```
+
+1. Git protocol: choose **HTTPS**.
+2. "Authenticate Git with your GitHub credentials?": choose **Yes**.
+3. Press Enter to open the browser. Check that it is signed in to the account that owns the org, enter the one time code, and authorize. Grant access to the org if the page offers it.
+
+If that account is already logged in and only needs the scope, run `env -u GITHUB_TOKEN gh auth refresh -h github.com -s admin:org` instead.
+
+Confirm the role. This must print `admin`:
+
+```bash
+env -u GITHUB_TOKEN gh api user/memberships/orgs/NightOwl-Labs --jq .role
+```
+
+**Create the machine user**
+
+GitHub requires a human to create each account, so this can't be scripted. In a private browser window:
+
+1. Sign up at github.com/signup as `nightowl-orchestrator` with `orchestrator@nightowl-labs.dev`.
+2. Get the verification code from the shared mailbox in Outlook, signed in as the mailbox owner. Direct sign-in to the shared mailbox is blocked on purpose.
+3. Turn on two factor. Save the password and recovery codes in your personal Bitwarden vault.
+
+**Add it to the org**
+
+From the `identity` folder, review the dry run, then apply. The script asks you to confirm the account is yours before inviting it.
+
+```bash
+./03-github-agent-accounts.sh
+```
+
+```bash
+./03-github-agent-accounts.sh --apply
+```
+
+Still signed in as `nightowl-orchestrator`, accept the invitation at github.com/orgs/NightOwl-Labs/invitation, then run `--apply` once more to finish the team membership.
+
 ---
 
 ## 2. First boot: Setup Assistant (MANUAL, at the Mac mini)

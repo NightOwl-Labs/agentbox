@@ -48,11 +48,8 @@ identity/03-github-agent-accounts.sh --apply
 ```
 
 **Before running:** `nightowl-labs.dev` must be a verified domain in your Microsoft 365
-tenant, and script 03 needs an org owner login with the `admin:org` scope:
-
-```bash
-gh auth refresh -h github.com -s admin:org
-```
+tenant, and script 03 needs an org owner login with the `admin:org` scope. See
+[section 1.7 of the runbook](nightowl-agentbox-setup.md#17-log-in-to-github-and-add-agent-accounts-manual-on-your-macbook).
 
 **Why PowerShell:** Azure CLI and Microsoft Graph can't add mailbox aliases, so Exchange
 Online PowerShell is required.
