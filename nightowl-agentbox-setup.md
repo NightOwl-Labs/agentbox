@@ -83,7 +83,7 @@ The orchestrator's approval only counts if it comes from a different GitHub iden
 | Identity | Used by | Access |
 |---|---|---|
 | Your Night Owl GitHub account | `nlcode` workers, via a **fine grained token** | Night Owl org repos only: Contents read/write, Pull requests read/write, Issues read/write. No admin, no secrets, no workflows write. |
-| `nightowl-orchestrator` (a dedicated machine user) | `nlorch` | Org member with **Maintain** role on Night Owl repos (enough to review and merge, not to change settings or delete repos). Its own fine grained token or classic token with `repo` scope. |
+| `nlorchestrator` (a dedicated machine user) | `nlorch` | Org member with **Maintain** role on Night Owl repos (enough to review and merge, not to change settings or delete repos). Its own fine grained token or classic token with `repo` scope. |
 | You (personal login) | You only | Org owner. Keep owner rights off both tokens. |
 
 Notes:
@@ -120,7 +120,7 @@ env -u GITHUB_TOKEN gh api user/memberships/orgs/NightOwl-Labs --jq .role
 
 GitHub requires a human to create each account, so this can't be scripted. In a private browser window:
 
-1. Sign up at github.com/signup as `nightowl-orchestrator` with `orchestrator@nightowl-labs.dev`.
+1. Sign up at github.com/signup as `nlorchestrator` with `orchestrator@nightowl-labs.dev`.
 2. Get the verification code from the shared mailbox in Outlook, signed in as the mailbox owner. Direct sign-in to the shared mailbox is blocked on purpose.
 3. Turn on two factor. Save the password and recovery codes in your personal Bitwarden vault.
 
@@ -136,7 +136,7 @@ From the `identity` folder, review the dry run, then apply. The script asks you 
 ./03-github-agent-accounts.sh --apply
 ```
 
-Still signed in as `nightowl-orchestrator`, accept the invitation at github.com/orgs/NightOwl-Labs/invitation, then run `--apply` once more to finish the team membership.
+Still signed in as `nlorchestrator`, accept the invitation at github.com/orgs/NightOwl-Labs/invitation, then run `--apply` once more to finish the team membership.
 
 ---
 
@@ -848,13 +848,13 @@ if [[ "$me" == "nlcode" ]]; then
   gh auth setup-git
 fi
 
-# 4. Orchestrator: GitHub identity is the nightowl-orchestrator machine user
+# 4. Orchestrator: GitHub identity is the nlorchestrator machine user
 if [[ "$me" == "nlorch" ]]; then
   git config --global user.name  "Night Owl Orchestrator"
   git config --global user.email "orchestrator@nightowl-labs.dev"
   git config --global init.defaultBranch main
   if ! gh auth status >/dev/null 2>&1; then
-    echo "Paste the nightowl-orchestrator GitHub token (input hidden):"
+    echo "Paste the nlorchestrator GitHub token (input hidden):"
     read -rs ghtoken
     printf '%s' "$ghtoken" | gh auth login --with-token
     unset ghtoken
@@ -871,7 +871,7 @@ echo "Then test secrets: with-secrets 'env | grep -c .'"
 
 #### `profiles/nlorch/settings.json`
 
-Merging is allowed. Anything that reaches production or changes repo settings asks first. When you're ready for the orchestrator to approve routine production deploys, move the `pending_deployments` rule from `ask` to `allow` (and add `nightowl-orchestrator` as an environment reviewer, section 9).
+Merging is allowed. Anything that reaches production or changes repo settings asks first. When you're ready for the orchestrator to approve routine production deploys, move the `pending_deployments` rule from `ask` to `allow` (and add `nlorchestrator` as an environment reviewer, section 9).
 
 ```json
 {
@@ -951,7 +951,7 @@ The orchestrator reviews and merges but does not write code or push. If it wants
 #### `profiles/nlorch/secrets.manifest`
 
 ```
-GITHUB_ORCHESTRATOR_TOKEN    # nightowl-orchestrator machine user, Night Owl org only
+GITHUB_ORCHESTRATOR_TOKEN    # nlorchestrator machine user, Night Owl org only
 # Production deploy credentials are NOT here. They live in GitHub environments.
 ```
 
@@ -1075,7 +1075,7 @@ Via Screen Sharing logged in as `nlfinance`:
 ```bash
 ~/bin/user-setup.sh       # paste the mini-orch Bitwarden token, then the orchestrator GitHub token
 claude                    # complete login once, then /exit
-gh auth status            # should show nightowl-orchestrator
+gh auth status            # should show nlorchestrator
 ```
 
 No Screen Sharing or browser setup needed; the orchestrator works headless through `gh`.
@@ -1148,10 +1148,10 @@ with-secrets "npm run test:integration"
 
 Production credentials never live on the Mac mini. Agents open pull requests; GitHub Actions deploys after you approve.
 
-1. **Branch protection** (or a ruleset) on `main` in every Night Owl repo: require PRs, require **1 approving review**, require passing checks, dismiss stale approvals on new commits, block force pushes, and do not allow bypass for the orchestrator. Worker PRs are opened by your Night Owl account and approved by `nightowl-orchestrator`, so the approval is a genuine second review.
+1. **Branch protection** (or a ruleset) on `main` in every Night Owl repo: require PRs, require **1 approving review**, require passing checks, dismiss stale approvals on new commits, block force pushes, and do not allow bypass for the orchestrator. Worker PRs are opened by your Night Owl account and approved by `nlorchestrator`, so the approval is a genuine second review.
 2. **GitHub environments**: a `production` environment per platform with required reviewers and **"Prevent self-review"** on.
    * **Stage 1 (now):** you are the only reviewer.
-   * **Stage 2 (later):** add `nightowl-orchestrator` as a reviewer for routine releases, move the `pending_deployments` rule to `allow` in `profiles/nlorch/settings.json`, update its CLAUDE.md, re-run `04-provision-profiles.sh`. Keep yourself as the only reviewer for anything sensitive (database migrations, auth, billing) by using a separate `production-critical` environment.
+   * **Stage 2 (later):** add `nlorchestrator` as a reviewer for routine releases, move the `pending_deployments` rule to `allow` in `profiles/nlorch/settings.json`, update its CLAUDE.md, re-run `04-provision-profiles.sh`. Keep yourself as the only reviewer for anything sensitive (database migrations, auth, billing) by using a separate `production-critical` environment.
 3. **Azure**: OIDC federated credentials from GitHub to the Night Owl subscription, scoped to specific resource groups. No stored secrets.
 4. **Power Platform**: service principal (app registration) with the Power Platform GitHub Actions, limited to target environments.
 5. **Salesforce**: Night Owl developer org plus a locked down connected app with JWT auth for the pipeline.
@@ -1168,7 +1168,7 @@ Production credentials never live on the Mac mini. Agents open pull requests; Gi
 | Monthly | Install macOS updates with `sudo fdesetup authrestart`; run `99-verify.sh` |
 | On any config change | Edit the repo on your MacBook, push, `git pull` as `nladmin`, re-run the relevant script |
 | Quarterly | Rotate Bitwarden machine account tokens and GitHub tokens; review Tailscale devices |
-| If an agent misbehaves | `sudo pkill -u <profile>` as admin, revoke that profile's Bitwarden token and GitHub token, review logs. For the orchestrator, also remove `nightowl-orchestrator` from environment reviewers until resolved. |
+| If an agent misbehaves | `sudo pkill -u <profile>` as admin, revoke that profile's Bitwarden token and GitHub token, review logs. For the orchestrator, also remove `nlorchestrator` from environment reviewers until resolved. |
 
 ### Rebuild from scratch
 

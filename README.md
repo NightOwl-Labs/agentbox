@@ -56,7 +56,7 @@ Online PowerShell is required.
 
 **Why GitHub signup is manual:** GitHub requires a human to create each account and forbids
 automated registration. Its terms also allow one free machine account per person, which is
-why only `nightowl-orchestrator` has a login in the CSV.
+why only `nlorchestrator` has a login in the CSV.
 
 ## Step 2: The Mac mini
 

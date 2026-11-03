@@ -34,13 +34,13 @@ if [[ "$me" == "nlcode" ]]; then
   gh auth setup-git
 fi
 
-# 4. Orchestrator: GitHub identity is the nightowl-orchestrator machine user
+# 4. Orchestrator: GitHub identity is the nlorchestrator machine user
 if [[ "$me" == "nlorch" ]]; then
   git config --global user.name  "Night Owl Orchestrator"
   git config --global user.email "orchestrator@nightowl-labs.dev"
   git config --global init.defaultBranch main
   if ! gh auth status >/dev/null 2>&1; then
-    echo "Paste the nightowl-orchestrator GitHub token (input hidden):"
+    echo "Paste the nlorchestrator GitHub token (input hidden):"
     read -rs ghtoken
     printf '%s' "$ghtoken" | gh auth login --with-token
     unset ghtoken

@@ -1,6 +1,6 @@
 kind,key,display_name,primary,aliases,github_login,github_team,github_repo_permission
 agent,coding,Night Owl Coding Agents,agents,nlcode;coding,,,
-agent,orchestrator,Night Owl Orchestrator,orchestrator,nlorch,nightowl-orchestrator,orchestrators,maintain
+agent,orchestrator,Night Owl Orchestrator,orchestrator,nlorch,nlorchestrator,orchestrators,maintain
 agent,finance,Night Owl Finance Agents,finance,nlfinance,,,
 business,billing,Night Owl Billing,billing,invoices;receipts,,,
 business,legal,Night Owl Legal,legal,contracts;compliance,,,
