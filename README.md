@@ -60,8 +60,9 @@ why only `nlorchestrator` has a login in the CSV.
 
 ## Step 2: The Mac mini
 
-Follow section 2 of the runbook, add your SSH public key as
-`ssh/authorized_keys/macbook-air.pub`, then as `nladmin`:
+Commit your SSH public key as `ssh/authorized_keys/macbook-air.pub`, then follow section 2
+of the runbook, which pushes this repo to the Mac mini over SSH. The Mac mini never logs in
+to GitHub. Then, as `nladmin`:
 
 ```bash
 ./bootstrap.sh

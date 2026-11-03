@@ -154,16 +154,48 @@ Still signed in as `nlorchestrator`, accept the invitation at github.com/orgs/Ni
 7. Install all macOS updates (System Settings > General > Software Update) and reboot.
 8. **Install Xcode** (needed for iOS builds and gives the command line tools):
    * Open App Store, use **Store > Sign In** (this signs into the App Store only, not iCloud) with the Night Owl Apple ID.
-   * Install Xcode, launch it once as `nladmin` to accept the license and install components.
+   * Install Xcode, launch it once as `nladmin` to install components.
+   * Accept the license in Terminal: `sudo xcodebuild -license accept`.
+   * Verify with `git --version`. It should print a version number, not a license prompt or an error.
    * **Store > Sign Out.**
 9. Grant Terminal Full Disk Access (System Settings > Privacy & Security > Full Disk Access > add Terminal). Some scripts below need it. Remove it again at the end (section 8).
-10. Clone the setup repo. Easiest: copy it over on a USB stick, or use HTTPS with a GitHub fine grained token that has read only access to that one repo:
+10. Turn on Remote Login so your MacBook can reach the Mac mini. Do not forward port 22 on your router; SSH stays on the local network until Tailscale is set up.
 
-```bash
-mkdir -p ~/src && cd ~/src
-git clone https://github.com/nightowl-labs/agentbox.git
-cd agentbox
-```
+    ```bash
+    sudo systemsetup -setremotelogin on
+    ```
+
+11. Validate from your **MacBook**, on the same network. Find the Mac mini's current address under System Settings > General > Sharing > Remote Login. Password login works until `05-ssh-hardening.sh` switches to keys only. This should print `nladmin` and a git version:
+
+    ```bash
+    ssh nladmin@<name>.local 'whoami; git --version'
+    ```
+
+12. Copy the setup repo over SSH from your **MacBook**. The Mac mini never logs in to GitHub and has no `origin` remote. Commit your SSH public key first (section 1.4), because `00-preflight.sh` needs it. Then, from the repo on your MacBook, using the address from step 11:
+
+    Create an empty repo on the Mac mini that accepts pushes:
+
+    ```bash
+    ssh nladmin@<name>.local 'mkdir -p ~/src && git init -b main ~/src/agentbox && git -C ~/src/agentbox config receive.denyCurrentBranch updateInstead'
+    ```
+
+    Add the Mac mini as a remote:
+
+    ```bash
+    git remote add mini nladmin@<name>.local:src/agentbox
+    ```
+
+    Send the repo. The files appear in `~/src/agentbox` on the Mac mini:
+
+    ```bash
+    git push mini main
+    ```
+
+    `01-system-settings.sh` renames the Mac mini, so after the bootstrap point the remote at the new address. Once Tailscale is up, `nladmin@nightowl-mini:src/agentbox` also works away from home.
+
+    ```bash
+    git remote set-url mini nladmin@nightowl-mini.local:src/agentbox
+    ```
 
 ---
 
@@ -1166,12 +1198,12 @@ Production credentials never live on the Mac mini. Agents open pull requests; Gi
 |---|---|
 | Weekly | `ssh mini-admin`, then `brew update && brew upgrade`, check `tmutil latestbackup` |
 | Monthly | Install macOS updates with `sudo fdesetup authrestart`; run `99-verify.sh` |
-| On any config change | Edit the repo on your MacBook, push, `git pull` as `nladmin`, re-run the relevant script |
+| On any config change | Edit the repo on your MacBook, run `git push origin main` and `git push mini main`, then re-run the relevant script as `nladmin`. The push is refused if the Mac mini has uncommitted changes, so make all edits on the MacBook. |
 | Quarterly | Rotate Bitwarden machine account tokens and GitHub tokens; review Tailscale devices |
 | If an agent misbehaves | `sudo pkill -u <profile>` as admin, revoke that profile's Bitwarden token and GitHub token, review logs. For the orchestrator, also remove `nlorchestrator` from environment reviewers until resolved. |
 
 ### Rebuild from scratch
 
 1. Erase the Mac mini, run Setup Assistant (section 2).
-2. Clone the repo, run `./bootstrap.sh`.
+2. Push the repo from your MacBook (section 2, steps 10 to 12), run `./bootstrap.sh`. Remove the stale host key on the MacBook first with `ssh-keygen -R <address>`.
 3. Run `user-setup.sh` in each profile with fresh Bitwarden tokens.
