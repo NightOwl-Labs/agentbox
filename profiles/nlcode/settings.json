@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git switch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git worktree:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh run view:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run:*)",
+      "Bash(npx:*)",
+      "Bash(swift build:*)",
+      "Bash(swift test:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(xcrun simctl:*)"
+    ],
+    "ask": [
+      "Bash(npm install:*)",
+      "Bash(pip install:*)",
+      "Bash(curl:*)",
+      "Bash(rm -rf:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh release:*)",
+      "WebFetch"
+    ],
+    "deny": [
+      "Bash(gh repo delete:*)",
+      "Bash(gh secret:*)"
+    ]
+  }
+}

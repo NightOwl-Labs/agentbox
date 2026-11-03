@@ -1,0 +1,17 @@
+# This repo holds the NAMES of secrets, never values. See README.md.
+.env
+.env.*
+*.secret
+*.secrets
+secrets.env
+token
+*.p8
+*.p12
+*.pfx
+*.pem
+*.key
+*.mobileprovision
+id_rsa
+id_ecdsa
+id_ed25519
+.DS_Store

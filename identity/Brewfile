@@ -1,0 +1,5 @@
+# Tools for the identity scripts and repo guards. Run on your MacBook, not the Mac mini.
+brew "powershell"
+brew "gh"
+brew "gitleaks"
+brew "shellcheck"

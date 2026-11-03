@@ -1,0 +1,11 @@
+kind,key,display_name,primary,aliases,github_login,github_team,github_repo_permission
+agent,coding,Night Owl Coding Agents,agents,nlcode;coding,,,
+agent,orchestrator,Night Owl Orchestrator,orchestrator,nlorch,nightowl-orchestrator,orchestrators,maintain
+agent,finance,Night Owl Finance Agents,finance,nlfinance,,,
+business,billing,Night Owl Billing,billing,invoices;receipts,,,
+business,legal,Night Owl Legal,legal,contracts;compliance,,,
+business,support,Night Owl Support,support,help;hello,,,
+business,security,Night Owl Security,security,abuse,,,
+business,it,Night Owl IT,it,admin;postmaster;domains;tailscale,,,
+business,apple,Night Owl Apple Developer,apple,developer,,,
+business,vault,Night Owl Vault,vault,,,,
