@@ -185,17 +185,19 @@ Still signed in as `nlorchestrator`, accept the invitation at github.com/orgs/Ni
     git remote add mini nladmin@<name>.local:src/agentbox
     ```
 
-    Send the repo. The files appear in `~/src/agentbox` on the Mac mini:
+    Send the repo:
 
     ```bash
     git push mini main
     ```
 
-    If `~/src/agentbox` already existed, `git init -b main` won't change its branch, so the push reports success but the folder stays empty. Fix it once on the Mac mini, and remove any leftover GitHub remote:
+    Check out `main` on the Mac mini. If `~/src/agentbox` already existed, `git init -b main` won't change its branch, so without this the push reports success but the folder stays empty. Then confirm the files are there:
 
     ```bash
-    cd ~/src/agentbox && git switch main && git remote remove origin
+    ssh nladmin@<name>.local 'cd ~/src/agentbox && git checkout main && ls'
     ```
+
+    If the folder came from an earlier `git clone`, also remove its GitHub remote on the Mac mini with `git remote remove origin`. Later pushes update the files automatically.
 
     `01-system-settings.sh` renames the Mac mini, so after the bootstrap point the remote at the new address. Once Tailscale is up, `nladmin@nightowl-mini:src/agentbox` also works away from home.
 
