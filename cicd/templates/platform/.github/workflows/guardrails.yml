@@ -1,0 +1,35 @@
+# Re-applies the agentbox guardrails to every repo every hour, so drift (or a repo created
+# by hand) is corrected without anyone remembering to.
+name: guardrails
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: One repo name, or empty for all
+        required: false
+        type: string
+        default: ""
+permissions:
+  contents: read
+concurrency:
+  group: platform-admin
+  cancel-in-progress: false
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: platform-admin
+    steps:
+      - uses: actions/checkout@v4
+      - id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.GUARDRAILS_APP_ID }}
+          private-key: ${{ secrets.GUARDRAILS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          ORCH_AUTO_APPROVE_OVERRIDE: ${{ vars.ORCH_AUTO_APPROVE }}
+          REPO: ${{ inputs.repo }}
+        run: cicd/guardrails.sh ${REPO:---all}

@@ -1,0 +1,60 @@
+#!/bin/bash
+# Admin control for the agent services. Installed to /usr/local/bin/agentctl.
+#
+#   agentctl status              services, last log line, remote control session
+#   agentctl logs [service]      follow a log (orchestrator, worker-1, remote-control, ...)
+#   agentctl pause | resume      agents finish their current job, then wait (no new work)
+#   agentctl restart [service]   restart one or all services
+#   agentctl stop                stop all services now and end running Claude sessions
+#   agentctl start               start all services
+# Most commands need sudo.
+set -uo pipefail
+# shellcheck source=/dev/null
+source /usr/local/etc/agentbox.env
+
+services() {
+  echo orchestrator
+  local i=1; while [[ $i -le $WORKER_COUNT ]]; do echo "worker-$i"; i=$((i + 1)); done
+}
+user_of() { case "$1" in orchestrator|remote-control) echo "$ORCH_USER" ;; *) echo "$CODE_USER" ;; esac; }
+need_root() { [[ $EUID -eq 0 ]] || { echo "Run with sudo: sudo agentctl $*"; exit 1; }; }
+
+case "${1:-status}" in
+  status)
+    printf '%-16s %-10s %-8s %s\n' SERVICE STATE PID "LAST LOG LINE"
+    for s in $(services); do
+      info="$(launchctl print "system/$LAUNCHD_PREFIX.$s" 2>/dev/null)"
+      state="$(awk '/^\tstate = /{print $3; exit}' <<<"$info")"; pid="$(awk '/^\tpid = /{print $3; exit}' <<<"$info")"
+      u="$(user_of "$s")"
+      last="$(sudo tail -n 1 "/Users/$u/work/logs/$s.log" 2>/dev/null | cut -c1-90)"
+      paused=""; sudo test -f "/Users/$u/work/PAUSE" && paused=" (paused)"
+      printf '%-16s %-10s %-8s %s\n' "$s" "${state:-missing}$paused" "${pid:--}" "$last"
+    done
+    rc="$(sudo -u "$ORCH_USER" -H /opt/homebrew/bin/tmux has-session -t remote 2>/dev/null && echo running || echo stopped)"
+    printf '%-16s %-10s\n' remote-control "$rc"
+    ;;
+  logs)
+    need_root "$@"; s="${2:-orchestrator}"
+    tail -n 100 -f "/Users/$(user_of "$s")/work/logs/$s.log" ;;
+  pause|resume)
+    need_root "$@"
+    for u in "$CODE_USER" "$ORCH_USER"; do
+      if [[ "$1" == pause ]]; then sudo -u "$u" touch "/Users/$u/work/PAUSE"; else rm -f "/Users/$u/work/PAUSE"; fi
+    done
+    echo "${1}d. Agents check this before starting each job." ;;
+  restart)
+    need_root "$@"
+    for s in ${2:-$(services)}; do launchctl kickstart -k "system/$LAUNCHD_PREFIX.$s" && echo "restarted $s"; done ;;
+  stop)
+    need_root "$@"
+    for s in $(services) remote-control; do launchctl bootout "system/$LAUNCHD_PREFIX.$s" 2>/dev/null && echo "stopped $s"; done
+    pkill -u "$CODE_USER" -f claude 2>/dev/null; pkill -u "$ORCH_USER" -f claude 2>/dev/null
+    sudo -u "$ORCH_USER" -H /opt/homebrew/bin/tmux kill-session -t remote 2>/dev/null
+    echo "All agent services stopped. 'sudo agentctl start' to bring them back." ;;
+  start)
+    need_root "$@"
+    for s in $(services) remote-control; do
+      launchctl bootstrap system "/Library/LaunchDaemons/$LAUNCHD_PREFIX.$s.plist" 2>/dev/null && echo "started $s"
+    done ;;
+  *) sed -n '2,12p' "$0"; exit 2 ;;
+esac

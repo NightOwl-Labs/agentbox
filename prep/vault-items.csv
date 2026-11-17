@@ -1,0 +1,16 @@
+name,username,email_local_part,url,generate_password,notes
+Agent box admin ({{ADMIN_USER}}),{{ADMIN_USER}},,,yes,Use this password for the first account in macOS Setup Assistant. Human only.
+Agent box FileVault recovery key,,,,no,Paste the recovery key shown during Setup Assistant.
+Bitwarden recovery code,,vault,https://vault.bitwarden.com,no,Paste the two step login recovery code. Keep an offline copy too.
+GitHub orchestrator ({{ORCH_GH_LOGIN}}),{{ORCH_GH_LOGIN}},orchestrator,https://github.com/signup,yes,Add the 2FA recovery codes to this item after signup.
+Tailscale,,it,https://login.tailscale.com,no,Signs in with your Microsoft 365 account; no separate password.
+Anthropic Console,,ai,https://console.anthropic.com,no,Email sign-in link to the ai@ alias.
+Cloudflare,,cloud,https://dash.cloudflare.com/sign-up,yes,Turn on 2FA.
+Azure,,,https://portal.azure.com,no,Uses your Microsoft 365 account. Record the subscription ID in notes.
+Supabase,,cloud,https://supabase.com/dashboard/sign-up,yes,Turn on 2FA.
+Vercel,,cloud,https://vercel.com/signup,no,Email sign-in link to the cloud@ alias.
+Netlify,,cloud,https://app.netlify.com/signup,yes,Turn on 2FA.
+Fly.io,,cloud,https://fly.io/app/sign-up,yes,Turn on 2FA.
+Railway,,cloud,https://railway.com/login,no,Email sign-in link to the cloud@ alias.
+Render,,cloud,https://dashboard.render.com/register,yes,Turn on 2FA.
+Apple Account (optional),,apple,https://account.apple.com,yes,Optional. Only for a future Apple Developer enrollment.

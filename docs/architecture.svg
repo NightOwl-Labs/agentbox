@@ -1,0 +1,215 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1010" width="1500" height="1010" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="aPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6C4BD8"/></marker>
+    <marker id="aOrange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#D97757"/></marker>
+    <marker id="aBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2F6FDE"/></marker>
+    <marker id="aTeal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#138A8A"/></marker>
+    <marker id="aGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2E9E5B"/></marker>
+    <marker id="aRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#D1344B"/></marker>
+    <style>
+      .t { font-size: 13px; fill: #1F2733; }
+      .s { font-size: 11.5px; fill: #4A5568; }
+      .xs { font-size: 10.5px; fill: #4A5568; }
+      .h { font-size: 15px; font-weight: 700; fill: #1F2733; }
+      .zone { font-size: 13px; font-weight: 700; letter-spacing: .04em; fill: #5B6475; }
+      .box { fill: #FFFFFF; stroke-width: 1.5; }
+      .lbl { font-size: 10.5px; font-weight: 600; }
+    </style>
+  </defs>
+
+  <rect width="1500" height="1010" fill="#FFFFFF"/>
+  <text x="40" y="40" font-size="24" font-weight="700" fill="#1F2733">agentbox: how the pieces connect</text>
+  <text x="40" y="64" class="s">Every name comes from config.env (ORG_NAME, ORG_DOMAIN, ORG_PREFIX, GH_ORG). &lt;p&gt; is ORG_PREFIX. Agents touch only GitHub, Bitwarden, and Anthropic; only GitHub Actions touches the cloud.</text>
+
+  <!-- ===== Humans ===== -->
+  <rect x="30" y="120" width="300" height="510" rx="14" fill="#F4F6FA" stroke="#C9D1E0" stroke-width="1.5"/>
+  <text x="48" y="146" class="zone">HUMANS</text>
+
+  <rect x="50" y="160" width="260" height="190" rx="10" class="box" stroke="#8A94A6"/>
+  <text x="66" y="186" class="h">Your MacBook</text>
+  <text x="66" y="210" class="s">Runs phases 1, 2, 4 and mini remote setup</text>
+  <text x="66" y="230" class="s">gh signed in as the org owner</text>
+  <text x="66" y="250" class="s">Approves merges and deploys on GitHub</text>
+  <text x="66" y="276" class="s">Bitwarden bootstrap token:</text>
+  <text x="66" y="294" class="s" font-weight="600">Keychain only, never on the mini</text>
+  <text x="66" y="320" class="s">Tailscale</text>
+
+  <rect x="50" y="370" width="260" height="110" rx="10" class="box" stroke="#8A94A6"/>
+  <text x="66" y="396" class="h">Phone</text>
+  <text x="66" y="420" class="s">Claude app: talk to the orchestrator</text>
+  <text x="66" y="438" class="s">by voice (Remote Control)</text>
+  <text x="66" y="462" class="s">Tailscale</text>
+
+  <rect x="50" y="500" width="260" height="110" rx="10" class="box" stroke="#8A94A6"/>
+  <text x="66" y="526" class="h">One real mailbox</text>
+  <text x="66" y="550" class="s">agents@ orchestrator@ vault@ cloud@ ...</text>
+  <text x="66" y="568" class="s">are aliases, filed by folder,</text>
+  <text x="66" y="586" class="s">and you can send as any of them</text>
+
+  <!-- ===== Tailscale band ===== -->
+  <rect x="345" y="120" width="36" height="510" rx="8" fill="#E8ECFF" stroke="#6B7BEA" stroke-width="1.5"/>
+  <text transform="translate(368 375) rotate(-90)" text-anchor="middle" font-size="12.5" font-weight="700" fill="#3F4FC4">TAILSCALE  ·  SSH only  ·  tag:agentbox</text>
+
+  <!-- ===== Agent box ===== -->
+  <rect x="395" y="120" width="420" height="510" rx="14" fill="#FFF8EC" stroke="#F0C27B" stroke-width="1.5"/>
+  <text x="413" y="146" class="zone">AGENT BOX  ·  MAC MINI  ·  &lt;p&gt;-agentbox</text>
+
+  <rect x="413" y="160" width="384" height="140" rx="10" class="box" stroke="#E8A33D"/>
+  <text x="428" y="185" class="h">&lt;p&gt;orch  ·  Orchestrator</text>
+  <text x="428" y="207" class="s">Turns requests into repos (via workflow) and agent-ready</text>
+  <text x="428" y="224" class="s">issues; reviews and comments on every agent PR</text>
+  <rect x="428" y="240" width="175" height="46" rx="8" fill="#FFF3E0" stroke="#E8A33D"/>
+  <text x="515" y="259" text-anchor="middle" class="t" font-weight="600">agent loop</text>
+  <text x="515" y="276" text-anchor="middle" class="xs">headless, API key</text>
+  <rect x="613" y="240" width="175" height="46" rx="8" fill="#FFF3E0" stroke="#E8A33D"/>
+  <text x="700" y="259" text-anchor="middle" class="t" font-weight="600">Remote Control</text>
+  <text x="700" y="276" text-anchor="middle" class="xs">your Claude subscription</text>
+
+  <rect x="413" y="320" width="384" height="140" rx="10" class="box" stroke="#E8A33D"/>
+  <text x="428" y="345" class="h">&lt;p&gt;code  ·  Coding agents</text>
+  <text x="428" y="367" class="s">Claim agent-ready issues, branch, commit, push,</text>
+  <text x="428" y="384" class="s">open PRs, address review feedback</text>
+  <rect x="428" y="400" width="175" height="46" rx="8" fill="#FFF3E0" stroke="#E8A33D"/>
+  <text x="515" y="419" text-anchor="middle" class="t" font-weight="600">worker-1</text>
+  <text x="515" y="436" text-anchor="middle" class="xs">own git worktree per job</text>
+  <rect x="613" y="400" width="175" height="46" rx="8" fill="#FFF3E0" stroke="#E8A33D"/>
+  <text x="700" y="419" text-anchor="middle" class="t" font-weight="600">worker-2</text>
+  <text x="700" y="436" text-anchor="middle" class="xs">own git worktree per job</text>
+
+  <rect x="413" y="480" width="384" height="90" rx="10" fill="#ECEFF3" stroke="#5B6475" stroke-width="1.5"/>
+  <text x="428" y="505" class="h">&lt;p&gt;admin  ·  Humans only</text>
+  <text x="428" y="527" class="s">No LLM, no API keys, no tokens, ever. Owns the rules,</text>
+  <text x="428" y="544" class="s">agentctl, FileVault. The human keeps control here.</text>
+  <text x="428" y="561" class="xs">Agents: standard users, homes 700, can't unlock FileVault</text>
+
+  <rect x="413" y="582" width="384" height="34" rx="8" fill="#FDE7C4" stroke="#E8A33D"/>
+  <text x="605" y="603" text-anchor="middle" class="xs" font-weight="600">Root owned Claude Code policy  ·  pf firewall  ·  FileVault</text>
+
+  <!-- ===== Bitwarden ===== -->
+  <rect x="900" y="140" width="270" height="150" rx="12" fill="#EEF3FD" stroke="#175DDC" stroke-width="1.5"/>
+  <text x="916" y="166" class="h">Bitwarden Secrets Manager</text>
+  <rect x="914" y="178" width="242" height="26" rx="6" class="box" stroke="#9DB5EE"/>
+  <text x="924" y="195" class="xs"><tspan font-weight="700" fill="#1F2733">bootstrap</tspan>  read/write  ·  MacBook only</text>
+  <rect x="914" y="210" width="242" height="26" rx="6" class="box" stroke="#9DB5EE"/>
+  <text x="924" y="227" class="xs"><tspan font-weight="700" fill="#1F2733">orchestrator</tspan>  read  ·  &lt;p&gt;orch only</text>
+  <rect x="914" y="242" width="242" height="26" rx="6" class="box" stroke="#9DB5EE"/>
+  <text x="924" y="259" class="xs"><tspan font-weight="700" fill="#1F2733">coding</tspan>  read  ·  &lt;p&gt;code only</text>
+  <text x="916" y="283" class="xs">GH_TOKEN and ANTHROPIC_API_KEY per profile</text>
+
+  <!-- ===== Anthropic ===== -->
+  <rect x="1200" y="140" width="270" height="150" rx="12" fill="#FBEFEA" stroke="#D97757" stroke-width="1.5"/>
+  <text x="1216" y="166" class="h">Anthropic</text>
+  <rect x="1214" y="178" width="242" height="26" rx="6" class="box" stroke="#EBB9A6"/>
+  <text x="1224" y="195" class="xs"><tspan font-weight="700" fill="#1F2733">workspace orchestrator</tspan>  API key, limit</text>
+  <rect x="1214" y="210" width="242" height="26" rx="6" class="box" stroke="#EBB9A6"/>
+  <text x="1224" y="227" class="xs"><tspan font-weight="700" fill="#1F2733">workspace coding</tspan>  API key, limit</text>
+  <rect x="1214" y="242" width="242" height="26" rx="6" class="box" stroke="#EBB9A6"/>
+  <text x="1224" y="259" class="xs"><tspan font-weight="700" fill="#1F2733">Claude subscription</tspan>  Remote Control relay</text>
+
+  <!-- ===== GitHub ===== -->
+  <rect x="900" y="330" width="570" height="300" rx="12" fill="#F6F8FA" stroke="#57606A" stroke-width="1.5"/>
+  <text x="916" y="356" class="h">GitHub org  ·  GH_ORG</text>
+
+  <rect x="915" y="370" width="170" height="172" rx="10" class="box" stroke="#57606A"/>
+  <text x="928" y="393" class="t" font-weight="700">platform repo</text>
+  <text x="928" y="414" class="xs">Requests (issues)</text>
+  <text x="928" y="432" class="xs">create-repo workflow:</text>
+  <text x="928" y="447" class="xs">the only way to a new repo</text>
+  <text x="928" y="465" class="xs">guardrails workflow, hourly</text>
+  <text x="928" y="489" class="xs">Guardrails App: the only</text>
+  <text x="928" y="504" class="xs">identity with repo admin,</text>
+  <text x="928" y="519" class="xs">used only from protected main</text>
+
+  <rect x="1100" y="370" width="170" height="172" rx="10" class="box" stroke="#57606A"/>
+  <text x="1113" y="393" class="t" font-weight="700">Product repos</text>
+  <text x="1113" y="414" class="xs">agent/* branch, then PR</text>
+  <text x="1113" y="432" class="xs">Ruleset: PR, 1 approval,</text>
+  <text x="1113" y="447" class="xs">last push approved by</text>
+  <text x="1113" y="462" class="xs">someone else, no force push</text>
+  <text x="1113" y="480" class="xs">CODEOWNERS: humans team</text>
+  <text x="1113" y="498" class="xs">secret-scan required</text>
+  <text x="1113" y="516" class="xs">Dependabot, CodeQL</text>
+
+  <rect x="1285" y="370" width="170" height="246" rx="10" class="box" stroke="#57606A"/>
+  <text x="1298" y="393" class="t" font-weight="700">Actions + environments</text>
+  <text x="1298" y="414" class="xs">iac.yml: plan on every PR,</text>
+  <text x="1298" y="429" class="xs">apply after merge</text>
+  <text x="1298" y="451" class="xs">preview: open</text>
+  <text x="1298" y="469" class="xs">production: waits for an</text>
+  <text x="1298" y="484" class="xs">approved reviewer</text>
+  <text x="1298" y="506" class="xs">Cloud credentials live</text>
+  <text x="1298" y="521" class="xs">here only (OIDC or scoped</text>
+  <text x="1298" y="536" class="xs">tokens per repo)</text>
+  <text x="1298" y="558" class="xs">Workflows can't approve</text>
+  <text x="1298" y="573" class="xs">PRs; tokens read only</text>
+  <text x="1298" y="595" class="xs">Audit trail: issues, PRs,</text>
+  <text x="1298" y="609" class="xs">reviews, runs</text>
+
+  <rect x="915" y="555" width="355" height="61" rx="10" fill="#FDECEE" stroke="#D1344B" stroke-width="2"/>
+  <text x="929" y="576" font-size="12.5" font-weight="800" fill="#B4233A">HARD STOP  ·  ORCH_AUTO_APPROVE=false</text>
+  <text x="929" y="593" class="xs" fill="#7A2030">Orchestrator only comments. A human code owner approves</text>
+  <text x="929" y="607" class="xs" fill="#7A2030">every merge and deploy. Only humans flip it.</text>
+
+  <!-- ===== Cloud ===== -->
+  <rect x="395" y="680" width="1075" height="150" rx="14" fill="#EEF8F1" stroke="#3FA16B" stroke-width="1.5"/>
+  <text x="413" y="706" class="zone">CLOUD AND HOSTING  ·  reached only by GitHub Actions, from infra/ (OpenTofu, or fly.toml)</text>
+  <g class="t">
+    <rect x="413" y="728" width="118" height="80" rx="9" class="box" stroke="#3FA16B"/>
+    <text x="472" y="760" text-anchor="middle" font-weight="700">Azure</text><text x="472" y="780" text-anchor="middle" class="xs">OIDC, no secret</text><text x="472" y="795" text-anchor="middle" class="xs">+ state + budget</text>
+    <rect x="543" y="728" width="118" height="80" rx="9" class="box" stroke="#3FA16B"/>
+    <text x="602" y="760" text-anchor="middle" font-weight="700">Cloudflare</text><text x="602" y="780" text-anchor="middle" class="xs">minted per repo</text><text x="602" y="795" text-anchor="middle" class="xs">scoped token</text>
+    <rect x="673" y="728" width="118" height="80" rx="9" class="box" stroke="#3FA16B"/>
+    <text x="732" y="760" text-anchor="middle" font-weight="700">Supabase</text><text x="732" y="780" text-anchor="middle" class="xs">access token</text><text x="732" y="795" text-anchor="middle" class="xs">dedicated org</text>
+    <rect x="803" y="728" width="118" height="80" rx="9" class="box" stroke="#3FA16B"/>
+    <text x="862" y="760" text-anchor="middle" font-weight="700">Vercel</text><text x="862" y="780" text-anchor="middle" class="xs">team token</text>
+    <rect x="933" y="728" width="118" height="80" rx="9" class="box" stroke="#3FA16B"/>
+    <text x="992" y="760" text-anchor="middle" font-weight="700">Netlify</text><text x="992" y="780" text-anchor="middle" class="xs">access token</text>
+    <rect x="1063" y="728" width="118" height="80" rx="9" class="box" stroke="#3FA16B"/>
+    <text x="1122" y="760" text-anchor="middle" font-weight="700">Fly.io</text><text x="1122" y="780" text-anchor="middle" class="xs">org deploy token</text>
+    <rect x="1193" y="728" width="118" height="80" rx="9" class="box" stroke="#3FA16B"/>
+    <text x="1252" y="760" text-anchor="middle" font-weight="700">Railway</text><text x="1252" y="780" text-anchor="middle" class="xs">project token</text>
+    <rect x="1323" y="728" width="128" height="80" rx="9" class="box" stroke="#3FA16B"/>
+    <text x="1387" y="760" text-anchor="middle" font-weight="700">Render</text><text x="1387" y="780" text-anchor="middle" class="xs">API key</text><text x="1387" y="795" text-anchor="middle" class="xs">dedicated workspace</text>
+  </g>
+
+  <!-- ===== Connectors ===== -->
+  <!-- MacBook to Bitwarden bootstrap -->
+  <path d="M150,160 V106 H1035 V140" fill="none" stroke="#6C4BD8" stroke-width="2" marker-end="url(#aPurple)"/>
+  <text x="560" y="101" class="lbl" fill="#6C4BD8">bootstrap token: stores and fetches setup secrets (read/write)</text>
+  <!-- Phone to Anthropic (Remote Control) -->
+  <path d="M50,425 H38 V88 H1335 V140" fill="none" stroke="#D97757" stroke-width="2" marker-end="url(#aOrange)"/>
+  <text x="560" y="83" class="lbl" fill="#D97757">voice request in the Claude app, relayed to the orchestrator's Remote Control session</text>
+  <!-- MacBook to admin over Tailscale -->
+  <path d="M310,330 H330 V525 H413" fill="none" stroke="#138A8A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#aTeal)"/>
+  <!-- Agents to Bitwarden -->
+  <path d="M815,215 H900" fill="none" stroke="#6C4BD8" stroke-width="2" marker-end="url(#aPurple)"/>
+  <text x="857" y="207" text-anchor="middle" class="lbl" fill="#6C4BD8">own project</text>
+  <!-- Agents to Anthropic -->
+  <path d="M815,308 H1185 V223 H1200" fill="none" stroke="#D97757" stroke-width="2" marker-end="url(#aOrange)"/>
+  <text x="857" y="301" text-anchor="middle" class="lbl" fill="#D97757">own key</text>
+  <!-- Agents to GitHub -->
+  <path d="M815,455 H900" fill="none" stroke="#2F6FDE" stroke-width="2.5" marker-end="url(#aBlue)"/>
+  <text x="857" y="436" text-anchor="middle" class="lbl" fill="#2F6FDE">issues, PRs,</text>
+  <text x="857" y="448" text-anchor="middle" class="lbl" fill="#2F6FDE">reviews</text>
+  <!-- Humans approve on GitHub -->
+  <path d="M180,630 V655 H1185 V616" fill="none" stroke="#D1344B" stroke-width="2.5" marker-end="url(#aRed)"/>
+  <text x="560" y="650" class="lbl" fill="#D1344B">humans approve merges and production deploys as code owners (the only approvers while the hard stop is on)</text>
+  <!-- Actions to cloud -->
+  <path d="M1370,616 V728" fill="none" stroke="#2E9E5B" stroke-width="2.5" marker-end="url(#aGreen)"/>
+  <text x="1378" y="665" class="lbl" fill="#2E9E5B">plan / apply</text>
+
+  <!-- ===== Legend ===== -->
+  <rect x="30" y="860" width="1440" height="124" rx="12" fill="#FAFBFC" stroke="#E1E5EB"/>
+  <text x="48" y="886" class="zone">LEGEND</text>
+  <g class="s">
+    <line x1="48" y1="912" x2="96" y2="912" stroke="#138A8A" stroke-width="2" stroke-dasharray="6 4"/><text x="106" y="916">SSH over Tailscale: setup and agentctl, admin only</text>
+    <line x1="48" y1="938" x2="96" y2="938" stroke="#6C4BD8" stroke-width="2"/><text x="106" y="942">Secrets: each profile reads only its own Bitwarden project</text>
+    <line x1="48" y1="964" x2="96" y2="964" stroke="#D97757" stroke-width="2"/><text x="106" y="968">Claude: one API workspace key per profile; voice via Remote Control</text>
+    <line x1="560" y1="912" x2="608" y2="912" stroke="#2F6FDE" stroke-width="2.5"/><text x="618" y="916">GitHub API: the only bridge between orchestrator and coders</text>
+    <line x1="560" y1="938" x2="608" y2="938" stroke="#2E9E5B" stroke-width="2.5"/><text x="618" y="942">Deploys: GitHub Actions only, with per repo credentials</text>
+    <line x1="560" y1="964" x2="608" y2="964" stroke="#D1344B" stroke-width="2.5"/><text x="618" y="968">Human approval gate (the hard stop)</text>
+    <text x="1080" y="916">Flow: request → orchestrator → create-repo</text>
+    <text x="1080" y="942">→ agent-ready issue → worker PR</text>
+    <text x="1080" y="968">→ orchestrator review → human approves</text>
+  </g>
+</svg>

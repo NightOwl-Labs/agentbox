@@ -1,0 +1,7 @@
+# Added by agentbox guardrails. Add ecosystems (npm, pip, terraform, ...) as the repo grows.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

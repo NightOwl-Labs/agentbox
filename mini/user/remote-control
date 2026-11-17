@@ -1,0 +1,29 @@
+#!/bin/bash
+# Starts (or checks) the orchestrator's Claude Code Remote Control session in tmux, so you
+# can talk to the orchestrator from the Claude app on your phone, including by voice.
+#
+# Remote Control needs a Claude subscription login (API keys aren't supported), so the
+# session runs WITHOUT ANTHROPIC_API_KEY; GH_TOKEN still comes from Bitwarden.
+# One time setup, as the orchestrator account:  claude  then  /login  then  /exit
+#
+# Usage: remote-control start | status | stop
+set -euo pipefail
+# shellcheck source=/dev/null
+source "$HOME/.config/agentbox/agent.env"
+S=remote
+case "${1:-start}" in
+  start)
+    if tmux has-session -t "$S" 2>/dev/null; then echo "running"; exit 0; fi
+    if [[ ! -f "$HOME/.config/agentbox/remote-control-enabled" ]]; then
+      echo "Not enabled. As $(whoami): run 'claude', '/login' with your Claude subscription, '/exit',"
+      echo "then: touch ~/.config/agentbox/remote-control-enabled && ~/bin/remote-control start"
+      exit 0
+    fi
+    mkdir -p "$HOME/work/plan"
+    tmux new-session -d -s "$S" -c "$HOME/work/plan" \
+      "$HOME/bin/with-secrets 'env -u ANTHROPIC_API_KEY claude remote-control --name \"$ORG_NAME orchestrator\" --spawn same-dir'"
+    echo "started: open the Claude app > Code and look for '$ORG_NAME orchestrator'" ;;
+  status) tmux has-session -t "$S" 2>/dev/null && echo "running" || echo "stopped" ;;
+  stop)   tmux kill-session -t "$S" 2>/dev/null && echo "stopped" || echo "not running" ;;
+  *) echo "Usage: remote-control start|status|stop"; exit 2 ;;
+esac

@@ -26,4 +26,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: shellcheck -S warning bootstrap.sh scripts/*.sh user/* identity/*.sh .githooks/*
+      - name: shellcheck
+        run: |
+          shellcheck -S warning -x lib/*.sh prep/*.sh cicd/*.sh cicd/providers/*.sh \
+            mini/*.sh mini/scripts/*.sh mini/user/* mini/admin/* validation/*.sh .githooks/*
+  config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Config loads and every template renders
+        run: |
+          for cfg in config.env config.example.env; do
+            AGENTBOX_CONFIG="$PWD/$cfg" bash -c 'source lib/config.sh; APPROVAL_RULE=x; TEMPLATE_VARS="$TEMPLATE_VARS APPROVAL_RULE"
+              for f in $(find mini/profiles mini/prompts mini/ssh cicd/templates prep -type f \( -name "*.md" -o -name "*.env" -o -name "*.conf" -o -name "*.json" -o -name "*.yml" -o -name "*.csv" -o -name CODEOWNERS \)); do
+                out="$(render "$f" 2>&1 >/dev/null)"; [ -z "$out" ] || { echo "$f: $out"; exit 1; }
+              done'
+          done
+      - name: JSON is valid
+        run: for f in mini/policy/*.json mini/profiles/*/settings.json prep/*.json; do jq empty "$f"; done

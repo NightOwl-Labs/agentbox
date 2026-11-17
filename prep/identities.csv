@@ -1,0 +1,16 @@
+local_part,folder,purpose
+agents,Agents,Git commit identity for the coding agents
+orchestrator,Agents,GitHub machine user for the orchestrator
+vault,Accounts,Bitwarden account
+it,Accounts,Tailscale and general IT notices
+cloud,Accounts,Cloud and hosting provider signups
+ai,Accounts,Anthropic Console
+github,Accounts,GitHub org notifications and billing
+billing,Business,Invoices and receipts
+legal,Business,Contracts and compliance
+support,Business,Customer support
+hello,Business,Public contact
+security,Admin,Security reports
+abuse,Admin,Abuse reports
+postmaster,Admin,Mail delivery reports
+apple,Optional,Apple Developer (optional; nothing depends on it)

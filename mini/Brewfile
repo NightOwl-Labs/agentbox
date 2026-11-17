@@ -1,0 +1,10 @@
+# CLI tools available to every account (installed by the admin into /opt/homebrew).
+# Claude Code is deliberately NOT here: it is installed per agent account only, never
+# for the admin.
+brew "git"
+brew "gh"
+brew "jq"
+brew "tmux"
+brew "node"
+brew "python"
+brew "tailscale"      # headless daemon (see 06-tailscale.sh)

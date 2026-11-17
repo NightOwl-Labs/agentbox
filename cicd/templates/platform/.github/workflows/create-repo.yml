@@ -1,0 +1,59 @@
+# The only way agents get a new repo. The orchestrator dispatches this; the guardrails App
+# creates the repo and protects it before any agent can push.
+name: create-repo
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: Repo name (lowercase letters, digits, dashes)
+        required: true
+        type: string
+      description:
+        description: One line description
+        required: false
+        type: string
+        default: ""
+      request:
+        description: Number of the platform issue that asked for it
+        required: false
+        type: string
+        default: ""
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: platform-admin
+  cancel-in-progress: false
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    # Only the protected default branch can use this environment, so workflow code on any
+    # other branch never sees the App key.
+    environment: platform-admin
+    steps:
+      - uses: actions/checkout@v4
+      - id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.GUARDRAILS_APP_ID }}
+          private-key: ${{ secrets.GUARDRAILS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - id: create
+        name: Create and protect
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          ORCH_AUTO_APPROVE_OVERRIDE: ${{ vars.ORCH_AUTO_APPROVE }}
+          NAME: ${{ inputs.name }}
+          DESCRIPTION: ${{ inputs.description }}
+        run: cicd/create-repo.sh "$NAME" "$DESCRIPTION"
+      - name: Report back on the request
+        if: always() && inputs.request != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUEST: ${{ inputs.request }}
+          NAME: ${{ inputs.name }}
+          OUTCOME: ${{ steps.create.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "$REQUEST" -R "$GITHUB_REPOSITORY" \
+            --body "create-repo for \`$NAME\`: **$OUTCOME** ([run]($RUN_URL)). Repo: https://github.com/$GITHUB_REPOSITORY_OWNER/$NAME"

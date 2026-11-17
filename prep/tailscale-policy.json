@@ -1,0 +1,12 @@
+{
+  "tagOwners": {
+    "{{TAILSCALE_TAG}}": ["autogroup:admin"]
+  },
+  "acls": [
+    {
+      "action": "accept",
+      "src": ["autogroup:member"],
+      "dst": ["{{TAILSCALE_TAG}}:22"]
+    }
+  ]
+}

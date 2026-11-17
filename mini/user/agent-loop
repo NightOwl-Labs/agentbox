@@ -1,0 +1,242 @@
+#!/bin/bash
+# The agent service. Runs forever under launchd, inside with-secrets (so GH_TOKEN and
+# ANTHROPIC_API_KEY come from this profile's Bitwarden project), and starts one headless
+# Claude Code session per job.
+#
+#   agent-loop worker N      coding agent N (profile CODE_USER)
+#     1. PRs it authored that carry the rework label: address the review, push
+#     2. issues labeled agent-ready: claim, branch, implement, push, open a PR
+#   agent-loop orchestrator  (profile ORCH_USER)
+#     1. requests labeled orchestrator: create repos (via workflow) and file agent-ready issues
+#     2. open PRs from the worker account with checks finished: review and comment
+#        (approve and merge only when ORCH_AUTO_APPROVE=true)
+#
+# One job per tick, then sleep POLL_SECONDS. State and logs live in ~/work.
+# Bash 3.2 compatible. No set -e: one failed job must not stop the service.
+set -uo pipefail
+# shellcheck source=/dev/null
+source "$HOME/.config/agentbox/agent.env"
+ROLE="${1:?usage: agent-loop worker N | orchestrator}"; ID="${2:-}"
+NAME="$ROLE${ID:+-$ID}"
+WORK="$HOME/work"; LOGS="$WORK/logs"; STATE="$WORK/state"; PROMPTS="$HOME/.config/agentbox/prompts"
+mkdir -p "$LOGS/jobs" "$STATE/locks" "$STATE/done" "$WORK/repos" "$WORK/worktrees"
+
+say() { printf '%s [%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$NAME" "$*"; }
+key() { printf '%s' "$*" | tr '/ #' '___'; }
+
+if [[ -z "${GH_TOKEN:-}" || -z "${ANTHROPIC_API_KEY:-}" ]]; then
+  say "GH_TOKEN or ANTHROPIC_API_KEY missing; is this running under with-secrets?"; sleep 300; exit 1
+fi
+ME="$(gh api user --jq .login)" || { say "GitHub rejected GH_TOKEN"; sleep 300; exit 1; }
+
+# ---- helpers ---------------------------------------------------------------------------
+try_lock() {   # a lock is a directory holding the owner's pid; stale locks are reclaimed
+  local l="$STATE/locks/$1" p
+  if mkdir "$l" 2>/dev/null; then echo $$ > "$l/pid"; return 0; fi
+  p="$(cat "$l/pid" 2>/dev/null)"
+  if [[ -n "$p" ]] && ! kill -0 "$p" 2>/dev/null; then
+    rm -rf "$l"; mkdir "$l" 2>/dev/null && { echo $$ > "$l/pid"; return 0; }
+  fi
+  return 1
+}
+release() { rm -rf "$STATE/locks/$1"; }
+wait_lock() { local i=0; until try_lock "$1"; do sleep 2; i=$((i + 1)); [[ $i -gt 150 ]] && return 1; done; }
+
+prompt() {     # prompt NAME KEY=VALUE...: fills __KEY__ placeholders
+  local text kv k v
+  text="$(cat "$PROMPTS/$1.md")"; shift
+  for kv in "$@"; do k="${kv%%=*}"; v="${kv#*=}"; text="${text//__${k}__/$v}"; done
+  printf '%s' "$text"
+}
+
+run_claude() { # run_claude DIR MODE LOG PROMPT
+  say "claude: $3"
+  ( cd "$1" && claude -p "$4" --permission-mode "$2" --max-turns "$AGENT_MAX_TURNS" \
+      --max-budget-usd "$AGENT_MAX_BUDGET_USD" --output-format json ) > "$LOGS/jobs/$3.json" 2>&1
+  local rc=$?
+  say "claude finished ($rc): $(jq -r '.result // .error // "no result"' "$LOGS/jobs/$3.json" 2>/dev/null | head -c 300 | tr '\n' ' ')"
+  return $rc
+}
+
+clone() {      # clone OWNER/REPO: prints the path of a fresh shared clone
+  local dir; dir="$WORK/repos/$(key "$1")"
+  if [[ ! -d "$dir/.git" ]]; then gh repo clone "$1" "$dir" -- --quiet || return 1; fi
+  git -C "$dir" fetch --quiet --prune origin || return 1
+  git -C "$dir" remote set-head origin --auto >/dev/null 2>&1
+  printf '%s' "$dir"
+}
+default_branch() { git -C "$1" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##'; }
+slug() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-//; s/-$//' | cut -c1-40; }
+labels_of() { gh issue view "$2" -R "$1" --json labels --jq '[.labels[].name] | join(",")' 2>/dev/null; }
+has_label() { [[ ",$1," == *",$2,"* ]]; }
+
+# ---- worker ----------------------------------------------------------------------------
+worker_issue() {
+  local repo="$1" n="$2" title dir def branch wt pr ahead lk job
+  lk="issue-$(key "$repo")-$n"
+  try_lock "$lk" || return 1
+  has_label "$(labels_of "$repo" "$n")" "$LABEL_CLAIMED" && { release "$lk"; return 1; }
+  gh issue edit "$n" -R "$repo" --add-label "$LABEL_CLAIMED" --add-assignee "@me" >/dev/null 2>&1 || \
+    gh issue edit "$n" -R "$repo" --add-label "$LABEL_CLAIMED" >/dev/null
+  title="$(gh issue view "$n" -R "$repo" --json title --jq .title)"
+  gh issue comment "$n" -R "$repo" --body "$NAME picked this up." >/dev/null
+  say "working on $repo#$n: $title"
+
+  wait_lock "repo-$(key "$repo")" || { release "$lk"; return 1; }
+  dir="$(clone "$repo")"; def="$(default_branch "$dir")"
+  branch="agent/$n-$(slug "$title")"; wt="$WORK/worktrees/$(key "$repo")-$n"
+  git -C "$dir" worktree remove --force "$wt" >/dev/null 2>&1; git -C "$dir" worktree prune
+  git -C "$dir" worktree add -q -B "$branch" "$wt" "origin/$def"
+  release "repo-$(key "$repo")"
+
+  job="$(date +%Y%m%d-%H%M%S)-$NAME-$(key "$repo")-$n"
+  run_claude "$wt" acceptEdits "$job" "$(prompt worker-issue NAME="$NAME" REPO="$repo" NUMBER="$n" BRANCH="$branch" DEFAULT="$def")"
+
+  pr="$(gh pr list -R "$repo" --head "$branch" --state open --json number --jq '.[0].number // empty')"
+  if [[ -z "$pr" ]]; then
+    ahead="$(git -C "$wt" rev-list --count "origin/$def..HEAD" 2>/dev/null || echo 0)"
+    if [[ "$ahead" -gt 0 ]]; then   # Claude committed but didn't finish the PR: finish it
+      git -C "$wt" push -q -u origin "$branch" && \
+        gh pr create -R "$repo" --base "$def" --head "$branch" --title "$title" \
+          --body "Closes #$n"$'\n\n'"Opened by $NAME. See commits for details." >/dev/null
+      pr="$(gh pr list -R "$repo" --head "$branch" --state open --json number --jq '.[0].number // empty')"
+    fi
+  fi
+  if [[ -n "$pr" ]]; then
+    gh issue edit "$n" -R "$repo" --add-label "$LABEL_PR_OPEN" >/dev/null
+    say "opened $repo#$pr for issue #$n"
+  else
+    gh issue edit "$n" -R "$repo" --add-label "$LABEL_BLOCKED" >/dev/null
+    gh issue comment "$n" -R "$repo" --body "$NAME couldn't finish this; a human needs to look. Log: \`$LOGS/jobs/$job.json\` on the agent box." >/dev/null
+    say "blocked on $repo#$n"
+  fi
+  git -C "$dir" worktree remove --force "$wt" >/dev/null 2>&1
+  release "$lk"
+  return 0
+}
+
+worker_rework() {
+  local repo="$1" n="$2" branch dir wt lk job before
+  lk="pr-$(key "$repo")-$n"
+  try_lock "$lk" || return 1
+  branch="$(gh pr view "$n" -R "$repo" --json headRefName --jq .headRefName)"
+  say "rework on $repo#$n ($branch)"
+  wait_lock "repo-$(key "$repo")" || { release "$lk"; return 1; }
+  dir="$(clone "$repo")"; wt="$WORK/worktrees/$(key "$repo")-pr$n"
+  git -C "$dir" worktree remove --force "$wt" >/dev/null 2>&1; git -C "$dir" worktree prune
+  git -C "$dir" worktree add -q -B "$branch" "$wt" "origin/$branch"
+  release "repo-$(key "$repo")"
+  before="$(git -C "$wt" rev-parse HEAD)"
+
+  job="$(date +%Y%m%d-%H%M%S)-$NAME-$(key "$repo")-pr$n"
+  run_claude "$wt" acceptEdits "$job" "$(prompt worker-rework NAME="$NAME" REPO="$repo" NUMBER="$n" BRANCH="$branch")"
+
+  if [[ "$(git -C "$wt" rev-parse HEAD)" != "$before" ]]; then
+    git -C "$wt" push -q origin "$branch" 2>/dev/null   # no-op if Claude already pushed
+    gh pr edit "$n" -R "$repo" --remove-label "$LABEL_REWORK" >/dev/null
+    say "pushed rework for $repo#$n"
+  else
+    gh pr edit "$n" -R "$repo" --remove-label "$LABEL_REWORK" --add-label "$LABEL_BLOCKED" >/dev/null
+    say "no changes made for $repo#$n; marked blocked"
+  fi
+  git -C "$dir" worktree remove --force "$wt" >/dev/null 2>&1
+  release "$lk"
+  return 0
+}
+
+worker_tick() {
+  local repo n
+  while read -r repo n; do
+    [[ -n "$repo" ]] && worker_rework "$repo" "$n" && return
+  done < <(gh search prs --owner "$GH_ORG" --state open --author "$ME" --label "$LABEL_REWORK" \
+             --json repository,number --jq '.[] | "\(.repository.nameWithOwner) \(.number)"' 2>/dev/null)
+  while read -r repo n; do
+    [[ -n "$repo" ]] && worker_issue "$repo" "$n" && return
+  done < <(gh search issues --owner "$GH_ORG" --state open --label "$LABEL_READY" --sort created --order asc \
+             --json repository,number --jq '.[] | "\(.repository.nameWithOwner) \(.number)"' \
+             -- "-label:$LABEL_CLAIMED" "-label:$LABEL_BLOCKED" 2>/dev/null)
+}
+
+# ---- orchestrator ----------------------------------------------------------------------
+orch_request() {
+  local repo="$1" n="$2" k job
+  k="req-$(key "$repo")-$n"
+  [[ -f "$STATE/done/$k" ]] && return 1
+  say "request $repo#$n"
+  mkdir -p "$WORK/plan"
+  job="$(date +%Y%m%d-%H%M%S)-request-$(key "$repo")-$n"
+  run_claude "$WORK/plan" dontAsk "$job" "$(prompt orch-request REPO="$repo" NUMBER="$n")"
+  has_label "$(labels_of "$repo" "$n")" "$LABEL_REQUEST_DONE" || \
+    gh issue edit "$n" -R "$repo" --add-label "$LABEL_REQUEST_DONE" >/dev/null
+  touch "$STATE/done/$k"
+  return 0
+}
+
+APPROVAL_OFF="do NOT approve and do NOT merge. The hard stop ORCH_AUTO_APPROVE is false, so a human approves. Post: \`gh pr review __NUMBER__ -R __REPO__ --comment --body \"Orchestrator review: ready for human approval. <summary of what you checked>\"\`"
+APPROVAL_ON="approve, then merge only if every check passed: \`gh pr review __NUMBER__ -R __REPO__ --approve --body \"<summary>\"\` then \`gh pr merge __NUMBER__ -R __REPO__ --squash --delete-branch\`"
+
+orch_review() {
+  local repo="$1" n="$2" head labels k pending dir wt job approval approved id
+  head="$(gh pr view "$n" -R "$repo" --json headRefOid --jq .headRefOid)" || return 1
+  k="review-$(key "$repo")-$n-$head"
+  [[ -f "$STATE/done/$k" ]] && return 1
+  labels="$(labels_of "$repo" "$n")"
+  has_label "$labels" "$LABEL_REWORK" && return 1     # waiting on the worker
+  has_label "$labels" "$LABEL_BLOCKED" && return 1    # waiting on a human
+  pending="$(gh pr checks "$n" -R "$repo" --json bucket --jq '[.[].bucket] | map(select(. == "pending")) | length' 2>/dev/null || echo 0)"
+  [[ "${pending:-0}" -gt 0 ]] && return 1             # let checks finish first
+  say "reviewing $repo#$n at ${head:0:7}"
+
+  wait_lock "repo-$(key "$repo")" || return 1
+  dir="$(clone "$repo")"; wt="$WORK/worktrees/review-$(key "$repo")-$n"
+  git -C "$dir" fetch -q origin "pull/$n/head"
+  git -C "$dir" worktree remove --force "$wt" >/dev/null 2>&1; git -C "$dir" worktree prune
+  git -C "$dir" worktree add -q --detach "$wt" "$head"
+  release "repo-$(key "$repo")"
+
+  approval="$APPROVAL_OFF"; [[ "$ORCH_AUTO_APPROVE" == "true" ]] && approval="$APPROVAL_ON"
+  approval="${approval//__NUMBER__/$n}"; approval="${approval//__REPO__/$repo}"
+  job="$(date +%Y%m%d-%H%M%S)-review-$(key "$repo")-$n"
+  run_claude "$wt" dontAsk "$job" "$(prompt orch-review REPO="$repo" NUMBER="$n" HEAD="$head" APPROVAL="$approval")"
+
+  # Hard stop backstop: an approval while ORCH_AUTO_APPROVE=false is dismissed at once.
+  if [[ "$ORCH_AUTO_APPROVE" != "true" ]]; then
+    approved="$(gh api "repos/$repo/pulls/$n/reviews" --jq "[.[] | select(.user.login == \"$ME\" and .state == \"APPROVED\") | .id] | .[]" 2>/dev/null)"
+    for id in $approved; do
+      gh api -X PUT "repos/$repo/pulls/$n/reviews/$id/dismissals" -f event=DISMISS \
+        -f message="Dismissed automatically: ORCH_AUTO_APPROVE is false, so only humans approve." --silent
+      say "HARD STOP: dismissed an orchestrator approval on $repo#$n"
+    done
+  fi
+  [[ "$(gh api "repos/$repo/pulls/$n/reviews" --jq "[.[] | select(.user.login == \"$ME\" and .commit_id == \"$head\")] | length" 2>/dev/null)" -gt 0 ]] || \
+    say "warning: no orchestrator review recorded on $repo#$n at ${head:0:7}"
+  git -C "$dir" worktree remove --force "$wt" >/dev/null 2>&1
+  touch "$STATE/done/$k"
+  return 0
+}
+
+orch_tick() {
+  local repo n
+  while read -r repo n; do
+    [[ -n "$repo" ]] && orch_request "$repo" "$n" && return
+  done < <(gh search issues --owner "$GH_ORG" --state open --label "$LABEL_REQUEST" --sort created --order asc \
+             --json repository,number --jq '.[] | "\(.repository.nameWithOwner) \(.number)"' \
+             -- "-label:$LABEL_REQUEST_DONE" 2>/dev/null)
+  while read -r repo n; do
+    [[ -n "$repo" ]] && orch_review "$repo" "$n" && return
+  done < <(gh search prs --owner "$GH_ORG" --state open --author "$WORKER_GH_LOGIN" --sort created --order asc \
+             --json repository,number --jq '.[] | "\(.repository.nameWithOwner) \(.number)"' 2>/dev/null)
+}
+
+# ---- main ------------------------------------------------------------------------------
+case "$ROLE" in
+  worker) [[ "$ME" == "$WORKER_GH_LOGIN" ]] || { say "GH_TOKEN is $ME, expected $WORKER_GH_LOGIN"; sleep 300; exit 1; } ;;
+  orchestrator) [[ "$ME" == "$ORCH_GH_LOGIN" ]] || { say "GH_TOKEN is $ME, expected $ORCH_GH_LOGIN"; sleep 300; exit 1; } ;;
+  *) say "unknown role $ROLE"; exit 2 ;;
+esac
+say "started as $ME in $GH_ORG (auto approve: $ORCH_AUTO_APPROVE, poll ${POLL_SECONDS}s)"
+while true; do
+  if [[ -f "$WORK/PAUSE" ]]; then sleep "$POLL_SECONDS"; continue; fi
+  case "$ROLE" in worker) worker_tick ;; orchestrator) orch_tick ;; esac
+  sleep "$POLL_SECONDS"
+done

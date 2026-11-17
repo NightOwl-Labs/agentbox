@@ -1,0 +1,7 @@
+# Rendered by agentbox into /etc/pf.anchors/agentbox.
+# SSH and Screen Sharing only from the tailnet. Local network SSH was only needed until
+# Tailscale was up. Break glass, at the machine: sudo pfctl -a agentbox -F rules
+pass in quick on lo0 all
+pass in quick inet proto tcp from 100.64.0.0/10 to any port 22
+pass in quick inet6 proto tcp from fd7a:115c:a1e0::/48 to any port 22
+block drop in quick proto tcp from any to any port { 22 5900 }

@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Edit(~/work/orchestrator-log.md)",
+      "Write(~/work/orchestrator-log.md)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(ls:*)",
+      "Bash(sleep:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh label list:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh search:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr review:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run watch:*)",
+      "Bash(gh workflow run create-repo.yml:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:*)",
+      "Bash(pytest:*)",
+      "Bash(python3 -m pytest:*)"
+    ],
+    "ask": [
+      "Bash(gh pr close:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(gh run rerun:*)",
+      "Bash(gh release:*)",
+      "Bash(gh api repos/*/actions/runs/*/pending_deployments:*)",
+      "Bash(gh api:*)",
+      "Edit",
+      "Write",
+      "WebFetch"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

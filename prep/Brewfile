@@ -1,0 +1,9 @@
+# Tools for the prep and cicd scripts. Runs on your MacBook, never the Mac mini.
+brew "powershell"     # Exchange Online: mail aliases and send-from-alias
+brew "gh"             # GitHub org, teams, rulesets, environments
+brew "jq"
+brew "gitleaks"       # pre-commit secret scanning for this repo
+brew "shellcheck"
+brew "bitwarden-cli"  # bw: creates vault login items with generated passwords
+# bws (Secrets Manager CLI) has no Homebrew formula; 00-install-tools.sh installs the signed release.
+# Provider CLIs (azure-cli, flyctl) are installed on demand by cicd/providers/*.sh.

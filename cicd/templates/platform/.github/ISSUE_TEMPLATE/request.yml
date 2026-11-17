@@ -1,0 +1,11 @@
+name: Request for the orchestrator
+description: Ask the orchestrator to plan work (a new product, a feature, a fix)
+labels: ["{{LABEL_REQUEST}}"]
+body:
+  - type: textarea
+    id: request
+    attributes:
+      label: What do you want?
+      description: Plain language is fine. Name a new repo if you want one.
+    validations:
+      required: true

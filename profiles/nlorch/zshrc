@@ -1,6 +1,0 @@
-# Managed by agentbox. Changes are overwritten on re-provision.
-eval "$(/opt/homebrew/bin/brew shellenv)"
-export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
-umask 077                     # new files private to this account
-export HISTFILE="$HOME/.zsh_history"
-[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
